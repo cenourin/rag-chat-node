@@ -2,6 +2,7 @@ import cors from "cors";
 import express from "express";
 import { config } from "./config";
 import { errorHandler } from "./middlewares/error-handler";
+import { documentsRouter } from "./routes/documents.route";
 
 export function createApp() {
   const app = express();
@@ -12,6 +13,8 @@ export function createApp() {
   app.get("/health", (_req, res) => {
     res.json({ status: "ok" });
   });
+
+  app.use("/documents", documentsRouter);
 
   app.use(errorHandler);
 
