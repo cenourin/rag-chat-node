@@ -3,6 +3,7 @@ import express from "express";
 import { config } from "./config";
 import { errorHandler } from "./middlewares/error-handler";
 import { documentsRouter } from "./routes/documents.route";
+import { chatRouter } from "./routes/chat.route";
 
 export function createApp() {
   const app = express();
@@ -15,6 +16,7 @@ export function createApp() {
   });
 
   app.use("/documents", documentsRouter);
+  app.use("/chat", chatRouter);
 
   app.use(errorHandler);
 
