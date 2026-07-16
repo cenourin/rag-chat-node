@@ -4,6 +4,7 @@ import { config } from "./config";
 import { errorHandler } from "./middlewares/error-handler";
 import { documentsRouter } from "./routes/documents.route";
 import { chatRouter } from "./routes/chat.route";
+import { historyRouter } from "./routes/history.route";
 
 export function createApp() {
   const app = express();
@@ -17,6 +18,7 @@ export function createApp() {
 
   app.use("/documents", documentsRouter);
   app.use("/chat", chatRouter);
+  app.use("/history", historyRouter);
 
   app.use(errorHandler);
 
