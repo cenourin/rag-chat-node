@@ -1,0 +1,21 @@
+services:
+  api:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - CLAUDE_MODEL=${CLAUDE_MODEL:-claude-sonnet-4-5}
+      - PORT=3000
+      - CHUNK_SIZE=${CHUNK_SIZE:-2000}
+      - CHUNK_OVERLAP=${CHUNK_OVERLAP:-200}
+      - RETRIEVAL_TOP_K=${RETRIEVAL_TOP_K:-4}
+      - HISTORY_MAX_ITEMS=${HISTORY_MAX_ITEMS:-50}
+    volumes:
+      # @xenova/transformers baixa o modelo de embeddings para dentro do próprio
+      # pacote na primeira chamada; persistir esse caminho evita rebaixar ~30MB
+      # a cada restart do container.
+      - model-cache:/app/node_modules/@xenova/transformers/.cache
+
+volumes:
+  model-cache:
