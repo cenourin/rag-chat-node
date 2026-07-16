@@ -1,0 +1,199 @@
+openapi: 3.0.3
+info:
+  title: rag-chat-node API
+  description: >
+    API REST que responde perguntas sobre documentos ingeridos usando um pipeline RAG
+    (Retrieval-Augmented Generation): ingestão -> chunking -> embeddings locais ->
+    busca por similaridade de cosseno -> geração de resposta com a API do Claude.
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000
+    description: Ambiente local / Docker Compose
+
+tags:
+  - name: Documents
+    description: Ingestão e listagem de documentos-fonte
+  - name: Chat
+    description: Perguntas e respostas com recuperação de contexto (RAG)
+  - name: History
+    description: Histórico de perguntas e respostas
+  - name: Health
+    description: Verificação de disponibilidade do serviço
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Verifica se a API está no ar
+      responses:
+        "200":
+          description: Serviço saudável
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /documents:
+    post:
+      tags: [Documents]
+      summary: Ingerir um novo documento
+      description: >
+        Recebe um texto, divide em chunks com sobreposição, gera embeddings locais
+        para cada chunk e os armazena no vector store em memória.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDocumentRequest"
+            examples:
+              manual:
+                value:
+                  title: "Política de Férias"
+                  text: "Funcionários têm direito a 30 dias corridos de férias por ano trabalhado..."
+      responses:
+        "201":
+          description: Documento ingerido com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Document"
+        "400":
+          description: Corpo da requisição inválido (title ou text ausente/vazio)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    get:
+      tags: [Documents]
+      summary: Listar documentos ingeridos
+      responses:
+        "200":
+          description: Lista de documentos, ordenada por data de criação
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Document"
+
+  /chat:
+    post:
+      tags: [Chat]
+      summary: Fazer uma pergunta com base nos documentos ingeridos
+      description: >
+        Gera o embedding da pergunta, recupera os N chunks mais similares
+        (similaridade de cosseno) e usa-os como contexto para gerar a resposta.
+        Se `ANTHROPIC_API_KEY` não estiver configurada, retorna uma resposta
+        heurística determinística com o mesmo formato de saída.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatRequest"
+            examples:
+              pergunta:
+                value:
+                  question: "Quantos dias de férias eu tenho por ano?"
+      responses:
+        "200":
+          description: Resposta gerada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatHistoryItem"
+        "400":
+          description: Corpo da requisição inválido (question ausente/vazia)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /history:
+    get:
+      tags: [History]
+      summary: Listar histórico de perguntas e respostas
+      description: Retorna os itens mais recentes primeiro, limitado a HISTORY_MAX_ITEMS.
+      responses:
+        "200":
+          description: Histórico de interações
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChatHistoryItem"
+
+components:
+  schemas:
+    CreateDocumentRequest:
+      type: object
+      required: [title, text]
+      properties:
+        title:
+          type: string
+          example: "Política de Férias"
+        text:
+          type: string
+          example: "Funcionários têm direito a 30 dias corridos de férias por ano trabalhado..."
+
+    Document:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        chunkCount:
+          type: integer
+          example: 3
+
+    ChatRequest:
+      type: object
+      required: [question]
+      properties:
+        question:
+          type: string
+          example: "Quantos dias de férias eu tenho por ano?"
+
+    ChatHistoryItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        question:
+          type: string
+        answer:
+          type: string
+        retrievedChunkIds:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              path:
+                type: string
+              message:
+                type: string
