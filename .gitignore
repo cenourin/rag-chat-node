@@ -1,0 +1,27 @@
+# Node
+node_modules/
+dist/
+build/
+*.log
+npm-debug.log*
+.env
+
+# Modelos de embeddings baixados localmente
+rag-chat-node/.cache/
+rag-chat-node/data/vector-store.json
+
+# Editores / SO
+.vscode/
+.idea/
+.DS_Store
+
+# LaTeX auxiliares (o PDF compilado fica versionado)
+*.aux
+*.toc
+*.out
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.log
+*.blg
+*.bbl
